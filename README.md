@@ -2,6 +2,8 @@
 
 **Catch secrets before you commit them.**
 
+**[Try the live demo](https://secret-scanner-git.vercel.app/)**
+
 Imagine you add an API key to a file while testing your app. A few days later, you forget it is there and get ready to push your code to GitHub. Secret Sweep can point you to the file and line before that key gets shared.
 
 It looks for common API keys, access tokens, private keys, and passwords in places like `.env` files. A finding tells you **where to look** and **what the scanner found**, while keeping the secret itself out of the report.
@@ -51,4 +53,3 @@ Use the exact file path and copy the rule name from the scan results. This examp
 
 
 To run the automated tests, open a terminal in the project folder and run `npm test`.
-
