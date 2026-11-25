@@ -20,6 +20,12 @@ Your files stay in your browser. Use the **Severity** filter to focus on High fi
 
 **What if I get 0 findings?** The scanner found no matches in the files it checked. It skips binary files, some folders such as `node_modules`, and files larger than 2 MB.
 
+## Use Secret Sweep as a skill
+
+Add [the Secret Sweep skill](.agents/skills/secret-sweep/SKILL.md) to your coding assistant. In Codex, ask the skill installer to install `.agents/skills/secret-sweep` from `amrit100612/Secret-Scanner-`. Keep a local checkout of this repo and tell the assistant where it is.
+
+Open the repo you want to check and ask **“Use $secret-sweep to scan my staged changes.”**
+
 ## Use it with Git
 
 Install Git and open a terminal in the project you want to scan. Replace the example path below with the location of `cli/git-sweep.cjs` on your computer.
