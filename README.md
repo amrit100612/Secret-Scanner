@@ -18,7 +18,7 @@ It looks for common API keys, access tokens, private keys, and passwords in plac
 
 Your files stay in your browser. Use the **Severity** filter to focus on High findings or click **Export JSON** to save the report.
 
-**What if I get 0 findings?** The scanner found no matches in the files it checked. It skips binary files, some folders such as `node_modules`, and files larger than 2 MB.
+**What if I get 0 findings?** The scanner found no matches in the files it checked. It skips binary files, some folders such as `node_modules`, and files larger than 2 MB. Lines over 4,096 characters are skipped and counted in the summary and JSON report. Staged scans exit with an error when an added or changed line exceeds this limit.
 
 ## Use Secret Sweep as a skill
 

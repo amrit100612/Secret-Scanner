@@ -6,6 +6,7 @@ const severity = byId('severity');
 const status = byId('status');
 const limit = 1000;
 let findings = [];
+let coverage;
 let scanning = false;
 let loadedAllowlist = null;
 let loadingAllowlist = false;
@@ -69,7 +70,8 @@ async function run(files, demo=false) {
   byId('summary').replaceChildren();
   byId('export').disabled = true;
   for (const control of controls) control.disabled = true;
-  let scanned = 0, skipped = 0, unreadable = 0, processed = 0;
+  let scanned = 0, skipped = 0, unreadable = 0, skippedLines = 0, processed = 0;
+  let lastYield = Date.now();
   let activeAllowlist = demo ? [] : loadedAllowlist;
   allowButton.disabled = true;
   allowClear.disabled = true;
@@ -86,9 +88,11 @@ async function run(files, demo=false) {
     }
     for (const file of files) {
       if (findings.length >= limit) break;
-      if (++processed % 40 === 0) {
+      ++processed;
+      if (Date.now() - lastYield >= 50) {
         status.textContent = 'Processing file ' + processed + ' of ' + files.length + '…';
         await new Promise(resolve => setTimeout(resolve,0));
+        lastYield = Date.now();
       }
       const path = file.webkitRelativePath || file.name;
       const relative = file.webkitRelativePath ? path.slice(path.indexOf('/')+1) : path;
@@ -96,7 +100,7 @@ async function run(files, demo=false) {
       try {
         const source = await file.text();
         if (source.includes('\0') || source.includes('\uFFFD')) { skipped++; continue; }
-        for (const match of SecretSweep.scan(relative,source,limit-findings.length,activeAllowlist ?? [])) {
+        for (const match of SecretSweep.scan(relative,source,limit-findings.length,activeAllowlist ?? [],undefined,() => skippedLines++)) {
           findings.push({...match,path});
         }
         scanned++;
@@ -104,8 +108,10 @@ async function run(files, demo=false) {
         unreadable++;
       }
     }
+    coverage = {scanned,skipped,unreadable,skippedLines,processed,selected:files.length,limitReached:findings.length >= limit};
     const stats = [scanned + ' scanned', skipped + ' skipped', findings.length + ' findings'];
     if (unreadable) stats.push(unreadable + ' unreadable');
+    if (skippedLines) stats.push(skippedLines + ' oversized lines skipped');
     for (const stat of stats) {
       const item = document.createElement('span');
       item.textContent = stat;
@@ -161,7 +167,7 @@ byId('demo').addEventListener('click',() => run([
 ],true));
 severity.addEventListener('change',renderRows);
 byId('export').addEventListener('click',() => {
-  const url = URL.createObjectURL(new Blob([JSON.stringify({findings},null,2)],{type:'application/json'}));
+  const url = URL.createObjectURL(new Blob([JSON.stringify({coverage,findings},null,2)],{type:'application/json'}));
   const link = document.createElement('a');
   link.href = url;
   link.download = 'secret-sweep-report.json';

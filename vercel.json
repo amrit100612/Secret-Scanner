@@ -3,5 +3,28 @@
   "framework": null,
   "installCommand": "",
   "buildCommand": "",
-  "outputDirectory": "public"
+  "outputDirectory": "public",
+  "headers": [
+    {
+      "headers": [
+        {
+          "value": "frame-ancestors 'none'",
+          "key": "Content-Security-Policy"
+        },
+        {
+          "value": "DENY",
+          "key": "X-Frame-Options"
+        },
+        {
+          "value": "nosniff",
+          "key": "X-Content-Type-Options"
+        },
+        {
+          "value": "no-referrer",
+          "key": "Referrer-Policy"
+        }
+      ],
+      "source": "/(.*)"
+    }
+  ]
 }

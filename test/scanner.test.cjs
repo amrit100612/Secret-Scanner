@@ -72,3 +72,11 @@ test('scanner source and shipped demo definitions contain no reportable secrets'
     assert.deepEqual(scan(path,readFileSync(resolve(__dirname,'..',path),'utf8')),[]);
   }
 });
+
+test('oversized lines are reported while subsequent lines retain their original positions',()=>{
+  const skipped = [];
+  const findings = scan('source.js','A'.repeat(4097)+'\n'+'ghp_'+'A'.repeat(36),
+    Infinity,[],undefined,line=>skipped.push(line));
+  assert.deepEqual(skipped,[1]);
+  assert.equal(findings[0].line,2);
+});

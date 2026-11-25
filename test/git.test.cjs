@@ -39,6 +39,11 @@ test('hook blocks newly staged high findings, respects exact allowlists, and his
     git('commit','-qm','allowed');
     git('rm','-f','old.txt');
     git('commit','-qm','removed');
+    put('long.txt','A'.repeat(4097)+'\n');
+    git('add','long.txt');
+    const incomplete = node('staged','--json');
+    assert.equal(incomplete.status,2,incomplete.stderr);
+    assert.equal(JSON.parse(incomplete.stdout).skippedLines,1);
     const history=node('history','--json');
     assert.equal(history.status,1,history.stderr);
     assert.ok(JSON.parse(history.stdout).findings.some(x=>x.commit===first&&x.path==='old.txt'));

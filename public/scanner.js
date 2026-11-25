@@ -35,7 +35,9 @@ const SecretSweep = (() => {
     });
   }
 
-  function scan(path,source,maxFindings=Infinity,allow=[],includeLine=()=>true) {
+  const maxLineLength = 4096;
+
+  function scan(path,source,maxFindings=Infinity,allow=[],includeLine=()=>true,onSkippedLine=()=>{}) {
     const findings = [];
     const env = /(?:^|\/)\.env(?:[.-].*)?$/i.test(path);
     const example = /(?:^|\/)\.env[.-](?:example|sample|template|dist)$/i.test(path);
@@ -44,6 +46,10 @@ const SecretSweep = (() => {
     for (let index=0;index<lines.length && findings.length<maxFindings;index++) {
       if (!includeLine(index+1)) continue;
       const line = lines[index];
+      if (line.length > maxLineLength) {
+        onSkippedLine(index+1);
+        continue;
+      }
       const add = (rule,severity) => findings.push({path,line:index+1,rule,severity});
       const known = rules.find(([rule, , pattern]) => !ignored.has(rule) && pattern.test(line));
       if (known) {

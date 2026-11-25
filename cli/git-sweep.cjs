@@ -13,7 +13,7 @@ const json = options.includes('--json');
 function git(...args) {
   try {
     return execFileSync('git',['--no-pager','--literal-pathspecs',...args],{
-      env,maxBuffer:64*1024*1024,stdio:['ignore','pipe','pipe']
+      env,timeout:30_000,maxBuffer:64*1024*1024,stdio:['ignore','pipe','pipe']
     });
   } catch {
     throw new Error('Git could not complete '+args[0]+'. Run from a readable local repository.');
@@ -79,7 +79,7 @@ function inspect(entries,allow,findings,commit,seen,stats) {
     const source = skip(entry.path,0) ? null : blob(entry.oid);
     if (source === null) {stats.skipped++;continue;}
     stats.scanned++;
-    const matches = scan(entry.path,source,Infinity,allow,commit ? undefined : stagedLines(entry.path));
+    const matches = scan(entry.path,source,Infinity,allow,commit ? undefined : stagedLines(entry.path),() => stats.skippedLines++);
     for (const match of matches) findings.push(commit ? {...match,commit} : match);
   }
 }
@@ -110,7 +110,7 @@ function main() {
   if (command === 'install-hook') return install();
 
   const findings = [];
-  const stats = {scanned:0,skipped:0};
+  const stats = {scanned:0,skipped:0,skippedLines:0};
   const allow = allowlist();
   let shallow = false;
   if (command === 'staged') {
@@ -126,6 +126,7 @@ function main() {
       inspect(files(changes),allow,findings,commit,seen,stats);
     }
   }
+  const incomplete = command === 'staged' && stats.skippedLines > 0;
   const blocked = findings.some(match => match.severity === 'High');
   if (json) console.log(JSON.stringify({command,...stats,shallow,findings},null,2));
   else {
@@ -134,9 +135,11 @@ function main() {
       console.error(commit+JSON.stringify(match.path)+':'+match.line+'  '+match.severity+'  '+match.rule);
     }
     console.error(stats.scanned+' scanned, '+stats.skipped+' skipped, '+findings.length+' findings.');
+    if (stats.skippedLines) console.error(stats.skippedLines+' oversized lines skipped.');
+    if (incomplete) console.error('Staged scan incomplete. Review or split oversized staged lines before committing.');
     if (shallow) console.error('Shallow repository. History is limited to locally available commits.');
   }
-  process.exitCode = blocked ? 1 : 0;
+  process.exitCode = incomplete ? 2 : blocked ? 1 : 0;
 }
 
 try { main(); }
