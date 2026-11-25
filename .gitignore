@@ -7,3 +7,15 @@ dist/
 *.log
 test/sweep-*/
 secret-sweep-report.json
+
+# Local credentials and private-key files
+.envrc.local
+secrets/
+credentials.local.json
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+id_ecdsa

@@ -56,6 +56,10 @@ Sometimes a fake token in a test file looks like a real one. To ignore a specifi
 
 Use the exact file path and copy the rule name from the scan results. This example ignores GitHub token matches in `tests/fixtures/demo.js`. The website reads the file when you choose the project folder. To use it in the pre-commit check, stage it with `git add .secretsweep.json`.
 
+## Keep secrets out of Git
 
+Store local secrets in `.env.local` or a folder named `secrets/`. This repo's `.gitignore` also covers common private-key files. If Git already tracks a file, adding it to `.gitignore` does not remove it or erase older copies. If a real key has been pushed, revoke or rotate it with the service that issued it.
 
-To run the automated tests, open a terminal in the project folder and run `npm test`.
+## Run the tests
+
+Open a terminal in the project folder and run `npm test`.
