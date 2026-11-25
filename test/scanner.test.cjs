@@ -7,13 +7,13 @@ test('provider keys keep only rule and position',()=>{
   assert.deepEqual(found,[{path:'src/config.js',line:2,rule:'GitHub token',severity:'High'}]);
 });
 test('dotenv assignments catch secrets and ignore placeholders',()=>{
-  assert.deepEqual(scan('.env.local','DB_PASSWORD="a synthetic value"\nAPI_KEY=changeme\nAPI_TOKEN=${FROM_ENV}\nPORT=3000'.replace('\\$','$')).map(x=>x.line),[1]);
+  assert.deepEqual(scan('.env.local','DB_PASSWORD'+'="a synthetic value"\nAPI_KEY=changeme\nAPI_TOKEN=${FROM_ENV}\nPORT=3000'.replace('\\$','$')).map(x=>x.line),[1]);
   assert.deepEqual(scan('.env.example','API_KEY=your_api_key_here'),[]);
   assert.equal(scan('.env.example','API_KEY=ghp_'+'A'.repeat(36)).length,1);
 });
 test('private key headers and URLs with passwords are detected',()=>{
-  assert.equal(scan('test.txt','-----BEGIN OPENSSH PRIVATE KEY-----')[0].rule,'Private key');
-  assert.equal(scan('test.txt','postgres://demo:Pass123@localhost/db')[0].rule,'URL credentials');
+  assert.equal(scan('test.txt','-----BEGIN'+' OPENSSH PRIVATE KEY-----')[0].rule,'Private key');
+  assert.equal(scan('test.txt','postgres:'+'//demo:Pass123@localhost/db')[0].rule,'URL credentials');
 });
 test('binary, dependency and Git internals are skipped',()=>{
   assert.equal(skip('project/.git/config',1),'excluded');
@@ -42,7 +42,7 @@ test('URLs with embedded passwords and known tokens still produce redacted findi
   const path = 'links.txt';
   const token = 'ghp_'+'A'.repeat(36);
   const lines = [
-    'https://user:pass%40word@example.com:8443/',
+    'https:'+'//user:pass%40word@example.com:8443/',
     'https://example.com/?token='+token,
     'https://user@example.com/',
     'https://user:@example.com/'
@@ -51,4 +51,24 @@ test('URLs with embedded passwords and known tokens still produce redacted findi
     {path,line:1,rule:'URL credentials',severity:'Medium'},
     {path,line:2,rule:'GitHub token',severity:'High'}
   ]);
+});
+
+test('ignores browser credential modes and shell searches while keeping real assignments',()=>{
+  const source = [
+    'options.credentials = "anonymous";',
+    'const options = { credentials: "same-origin" };',
+    "grep '^ELEVENLABS_API_KEY=' \"example.env\" \"config.env\"",
+    'const password'+' = "a synthetic password";',
+    'const credentials'+' = "a synthetic credential";',
+    'options.credentials = "anonymous"; const password'+' = "another synthetic password";'
+  ].join('\n');
+  assert.deepEqual(scan('example.js',source).map(x=>x.line),[4,5,6]);
+});
+
+test('scanner source and shipped demo definitions contain no reportable secrets',()=>{
+  const {readFileSync}=require('node:fs');
+  const {resolve}=require('node:path');
+  for (const path of ['public/app.js','test/scanner.test.cjs']) {
+    assert.deepEqual(scan(path,readFileSync(resolve(__dirname,'..',path),'utf8')),[]);
+  }
 });

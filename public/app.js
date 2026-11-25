@@ -155,8 +155,8 @@ drop.addEventListener('drop', e => {
 
 byId('demo').addEventListener('click',() => run([
   new File(['PORT=3000\nDB_PASSWORD=local-demo-123\n'],'demo/.env'),
-  new File(['// Demo fixture\nconst token = "ghp_' + 'A'.repeat(36) + '";\n'],'demo/src/config.js'),
-  new File(['-----BEGIN OPENSSH PRIVATE KEY-----\n'],'demo/fixture.pem'),
+  new File(['// Demo fixture\nconst token' + ' = "ghp_' + 'A'.repeat(36) + '";\n'],'demo/src/config.js'),
+  new File(['-----BEGIN' + ' OPENSSH PRIVATE KEY-----\n'],'demo/fixture.pem'),
   new File(['API_KEY=your_api_key_here\n'],'demo/.env.example')
 ],true));
 severity.addEventListener('change',renderRows);

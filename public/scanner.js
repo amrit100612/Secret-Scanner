@@ -11,8 +11,9 @@ const SecretSweep = (() => {
   ];
   const sensitive = String.raw`(?:api[_-]?key|token|password|passwd|secret|private[_-]?key|credential|access[_-]?key)`;
   const envAssignment = new RegExp('^\\s*(?:export\\s+)?[\\w-]*'+sensitive+'[\\w-]*\\s*=\\s*(.*)$','i');
-  const codeAssignment = new RegExp('(?:^|[^\\w-])["\']?[\\w-]*'+sensitive+'[\\w-]*["\']?\\s*[:=]\\s*(["\'])([^\\r\\n]+?)\\1','i');
+  const codeAssignment = new RegExp('(?:^|[^\\w^-])["\']?([\\w-]*'+sensitive+'[\\w-]*)["\']?\\s*[:=]\\s*(["\'])([^\\r\\n]+?)\\2','gi');
   const placeholder = /^(?:$|<[^>]+>|\$\{.*\}|\$[\w]+|\{\{.*\}\}|(?:change[_-]?me|replace[_-]?me|dummy|example|sample|placeholder|redacted|none|null|undefined|todo|xxx+)(?:[-_ ].*)?|your(?:[-_ ].*)?)$/i;
+  const browserCredentialModes = new Set(['anonymous','use-credentials','same-origin','include','omit']);
   const urlValue = /^[a-z][a-z0-9+.-]*:\/\/[^\s"'<>]+$/i;
   const excluded = /(?:^|\/)(?:\.git|node_modules|\.venv|vendor|dist|coverage)(?:\/|$)|\.(?:png|jpe?g|webp|gif|ico|mp4|mp3|pdf|woff2?|zip|gz|exe|dll|lock)$/i;
 
@@ -50,12 +51,19 @@ const SecretSweep = (() => {
         continue;
       }
       if (example || /^\s*(?:#|\/\/)/.test(line)) continue;
-      let value = env ? envAssignment.exec(line)?.[1] : codeAssignment.exec(line)?.[2];
-      if (value === undefined) continue;
-      value = value.trim().replace(/^"([^"]*)"(?:\s*#.*)?$|^'([^']*)'(?:\s*#.*)?$|(\s+#.*$)/, (_,double,single) => double ?? single ?? '').trim();
       const rule = env ? 'Sensitive .env value' : 'Hardcoded credential';
-      if (!ignored.has(rule) && !rules.some(([, , pattern]) => pattern.test(value)) && value && (env || value.length >= 8) && !placeholder.test(value) && !urlValue.test(value)) {
-        add(rule,'Medium');
+      if (ignored.has(rule)) continue;
+      const assignments = env ? [envAssignment.exec(line)] : line.matchAll(codeAssignment);
+      for (const assignment of assignments) {
+        if (!assignment) continue;
+        let value = assignment[env ? 1 : 3];
+        value = value.trim().replace(/^"([^"]*)"(?:\s*#.*)?$|^'([^']*)'(?:\s*#.*)?$|(\s+#.*$)/, (_,double,single) => double ?? single ?? '').trim();
+        if (!env && assignment[1].toLowerCase() === 'credentials' && browserCredentialModes.has(value)) continue;
+        if (value && (env || value.length >= 8) && !placeholder.test(value) && !urlValue.test(value) &&
+            !rules.some(([, , pattern]) => pattern.test(value))) {
+          add(rule,'Medium');
+          break;
+        }
       }
     }
     return findings;
