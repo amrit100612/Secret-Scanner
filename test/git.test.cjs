@@ -1,0 +1,46 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+
+const path=require('node:path');
+const {spawnSync}=require('node:child_process');
+const cli=path.resolve('cli/git-sweep.cjs');
+test('hook blocks newly staged high findings, respects exact allowlists, and history finds removed values',()=>{
+  const cwd=fs.mkdtempSync(path.resolve('test/sweep-'));
+  const run=(cmd,...args)=>spawnSync(cmd,args,{cwd,encoding:'utf8',env:{...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:path.join(cwd,"empty-git-config")}});
+  const git=(...args)=>{const result=run('git',...args);assert.equal(result.status,0,result.stderr);return result.stdout.trim()};
+  const node=(...args)=>run(process.execPath,cli,...args);
+  const put=(name,value)=>fs.writeFileSync(path.join(cwd,name),value);
+  const token='ghp_'+'A'.repeat(36);
+  try {
+    git('init','-q');
+    git('config','user.email','test@example.invalid');
+    git('config','user.name','Test');
+    put('old.txt',token+'\nunchanged\n');
+    git('add','old.txt');
+    git('commit','-qm','old');
+    const first=git('rev-parse','HEAD');
+    put('old.txt',token+'\nchanged\n');
+    git('add','old.txt');
+    assert.deepEqual(JSON.parse(node('staged','--json').stdout).findings,[]);
+    put('new space.txt','ok\n'+token+'\n');
+    git('add','new space.txt');
+    put('new space.txt','unstaged clean\n');
+    const staged=node('staged','--json');
+    assert.equal(staged.status,1,staged.stderr);
+    assert.deepEqual(JSON.parse(staged.stdout).findings,[{path:'new space.txt',line:2,rule:'GitHub token',severity:'High'}]);
+    assert.doesNotMatch(staged.stdout,/ghp_/);
+    assert.equal(node('install-hook').status,0);
+    assert.equal(node('install-hook').status,2);
+    assert.equal(run('git','commit','-qm','blocked').status,1);
+    put('.secretsweep.json',JSON.stringify({allow:[{path:'new space.txt',rule:'GitHub token'}]}));
+    assert.equal(node('staged','--json').status,1,'unstaged allowlist cannot bypass the hook');
+    git('add','.secretsweep.json');
+    git('commit','-qm','allowed');
+    git('rm','-f','old.txt');
+    git('commit','-qm','removed');
+    const history=node('history','--json');
+    assert.equal(history.status,1,history.stderr);
+    assert.ok(JSON.parse(history.stdout).findings.some(x=>x.commit===first&&x.path==='old.txt'));
+  } finally {fs.rmSync(cwd,{recursive:true,force:true});}
+});

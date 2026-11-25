@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Scan local repository files for hardcoded credentials.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'">
+<title>Secret Sweep — Local secrets scanner</title>
+<link rel="stylesheet" href="style.css">
+<script defer src="scanner.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<header><div class="shell brand"><span class="mark" aria-hidden="true">⌘</span> Secret Sweep <span class="header-note"><i></i> Local scan</span></div></header>
+<main class="shell">
+<section class="intro">
+<p class="eyebrow">REPOSITORY SECURITY</p>
+<h1>Find secrets before<br class="desktop"> they ship<span>.</span></h1>
+<p>Scan a local repository for hardcoded API keys, tokens, private keys, and sensitive <code>.env</code> values. Files stay in your browser.</p>
+</section>
+<div class="grid">
+<section class="panel scan-panel" aria-labelledby="scan-title">
+<div class="panel-head"><h2 id="scan-title">Scan a repository</h2><span class="mono">WORKING TREE</span></div>
+<div id="drop" class="drop">
+<div class="scan-icon" aria-hidden="true">[ · ]</div>
+<h3>Choose a local folder</h3>
+<p>Or drop individual files here.</p>
+<div class="actions"><button id="folder-btn" class="primary">Choose folder</button><button id="files-btn">Choose files</button></div>
+<input type="file" id="folder" webkitdirectory multiple hidden><input type="file" id="files" multiple hidden>
+</div>
+<div class="scan-footer"><button id="demo" class="quiet">Try sample scan</button><span class="mono">2 MB MAX / FILE</span></div>
+<details class="allow-panel"><summary>Allowlist settings</summary><p>Load a .secretsweep.json file to ignore an exact path and rule.</p><div class="actions"><button id="allow-btn">Load allowlist</button><button id="allow-clear" disabled>Clear</button></div><input type="file" id="allow-file" accept=".json,application/json" hidden><p id="allow-status" role="status">Folder scans also read a .secretsweep.json file at the selected root.</p></details>
+</section>
+<aside class="panel coverage" aria-labelledby="coverage-title">
+<div class="panel-head"><h2 id="coverage-title">Detection rules</h2></div>
+<ul>
+<li><div><strong>Provider tokens</strong><p>GitHub, AWS, Slack, Stripe, OpenAI</p></div></li>
+<li><div><strong>Private keys</strong><p>PEM and OpenSSH key headers</p></div></li>
+<li><div><strong>Hardcoded credentials</strong><p>Passwords in URLs, code, and dotenv files</p></div></li>
+</ul>
+<p class="aside-foot">Findings contain file locations only. Secret values are omitted.</p>
+</aside>
+</div>
+<section class="panel results" aria-labelledby="results-title">
+<div class="panel-head"><h2 id="results-title">Scan results</h2><button id="export" disabled>Export JSON</button></div>
+<div id="summary" class="metrics"></div>
+<p id="status" class="status" role="status">Select a folder or try the sample scan to see findings here.</p>
+<div id="findings" hidden>
+<label class="filter" for="severity">Severity <select id="severity"><option value="">All severities</option><option>High</option><option>Medium</option></select></label>
+<div class="table-wrap"><table><thead><tr><th scope="col">Severity</th><th scope="col">Rule</th><th scope="col">File</th><th scope="col">Line</th></tr></thead><tbody id="rows"></tbody></table></div>
+<p id="no-filter" class="filter-empty" hidden>No findings match this filter.</p>
+</div>
+</section>
+</main>
+<footer class="shell footer"><span>SECRET SWEEP</span><span>Pattern-based detection · Git history excluded</span></footer>
+</body>
+</html>

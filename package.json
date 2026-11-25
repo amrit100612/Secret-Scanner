@@ -1,0 +1,10 @@
+{
+  "name": "secret-sweep",
+  "version": "1.0.0",
+  "private": true,
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build:offline": "node scripts/build-offline.cjs",
+    "test": "node scripts/build-offline.cjs && node --test"
+  }
+}
