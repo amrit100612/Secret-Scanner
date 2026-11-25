@@ -1,26 +1,36 @@
 # Secret Sweep
 
-Run `npm run build:offline` and open `dist/secret-sweep.html` in a browser for an offline scan. Choose the repository root to scan its current files, or use **Try sample scan** to see synthetic findings. Reports contain locations and rule names. The scanner does not upload files or validate tokens against providers.
+Secret Sweep finds API keys, passwords, and tokens that may have been left in your code. Your files stay in your browser when you use the website.
 
-## Git commands
+## Try it on your computer
 
-Requires Git and Node.js 18 or later. Keep this checkout in a stable folder and run these commands from the repository you want to scan. Replace the example path with the actual path to the CLI.
+1. Download or clone this project. Open a terminal in the project folder. You need Node.js 22 or newer.
+2. Run `npm run build:offline`.
+3. Open `dist/secret-sweep.html` in your browser.
+4. Click **Try sample scan**. You should see three findings from demo files.
+5. Click **Choose folder** to scan your own code.
+
+Each finding shows the file, line number, and what the scanner found. The secret itself stays hidden, even in the JSON report. **0 findings** means the scanner found no matches in the files it checked. It skips binary files, some folders like `node_modules`, and files over 2 MB.
+
+## Check your Git commits
+
+Install Git, then open a terminal in the repo you want to check. Replace the example path below with the path to `cli/git-sweep.cjs` on your computer.
 
 ```powershell
 node "C:/Tools/secret-sweep/cli/git-sweep.cjs" staged
 node "C:/Tools/secret-sweep/cli/git-sweep.cjs" install-hook
 node "C:/Tools/secret-sweep/cli/git-sweep.cjs" history
-node "C:/Tools/secret-sweep/cli/git-sweep.cjs" history --json
 ```
 
-- **staged** reads the Git index and scans added or changed lines. High findings block the commit. Medium findings are reported.
-- **install-hook** writes Git's pre-commit hook and refuses to overwrite an existing hook. If your repo already has one, add the staged command to that hook and propagate its exit status. Keep the CLI in place, or update the hook path if you move it.
-- **history** scans committed file versions reachable from local refs and HEAD, including files deleted later. It scans each distinct path and blob once and reports the first commit it scanned for that pair. Shallow clones are limited to available commits. Large histories can take time.
-- Exit codes are **0** for no High findings, **1** for High findings, and **2** for an operational error. The scan skips binary files, selected dependency and build folders, and files larger than 2 MB.
+- **staged** checks the lines you have marked for your next commit with `git add`.
+- **install-hook** makes Git run that check before every commit. A high-severity finding stops the commit. The installer leaves any existing hook in place.
+- **history** checks old commits available on your computer, including files you deleted later. Add `--json` to get a JSON report.
 
-## Allowlist
+The Git commands return `0` when there are no high-severity findings, `1` when they find one or more, and `2` if the scan could not finish.
 
-Save a `.secretsweep.json` file in the repository root. Paths are exact, case-sensitive repository-relative paths with forward slashes. Use the rule name shown in the report.
+## Ignore a known test value
+
+If the scanner flags a fake token in a test file, add a file called `.secretsweep.json` to the top folder of your repo.
 
 ```json
 {
@@ -30,12 +40,12 @@ Save a `.secretsweep.json` file in the repository root. Paths are exact, case-se
 }
 ```
 
-Stage the config to apply it to the pre-commit scan. The history command uses the current root config. The website reads the selected folder's root config or a file explicitly loaded under **Allowlist settings**. An entry suppresses every finding for that rule in that file, so keep entries specific to known fixtures.
+Copy the rule name from the scan results. Use the exact file path from the top of the repo, with `/` between folders. This example ignores every GitHub token match in that one file. The website reads the config when you choose the repo folder, and the history scan uses the current config. Run `git add .secretsweep.json` to use it in the pre-commit check.
 
+## Put the website on Vercel
 
+1. In Vercel, import this GitHub repo and keep the root directory as the repo's top folder.
+2. Click **Deploy**. The included `vercel.json` tells Vercel to serve the website from `public/`. You can leave environment variables empty.
+3. Open the deployed website and click **Try sample scan** to check that it works.
 
-## Development and deployment
-
-Use Node.js 22 or newer. Run `npm test` for the scanner, offline dashboard and real Git hook tests. The website entry point is `public/index.html`, and the CLI shares `public/scanner.js` with it.
-
-Import the GitHub repository into Vercel and use the repository root as the project root. The checked-in `vercel.json` selects the Other preset and serves `public/` directly. No build, environment variables, API routes or server are required. Verify the deployment by opening the site and selecting **Try sample scan**. It should show three synthetic findings.
+Run `npm test` in the project folder to run the automated tests.
