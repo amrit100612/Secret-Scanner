@@ -7,12 +7,13 @@ const SecretSweep = (() => {
     ['Stripe live secret','High',/\b(?:sk|rk)_live_[A-Za-z0-9]{16,}\b/],
     ['OpenAI API key','High',/\bsk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{32,}\b/],
     ['Private key','High',/-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----/],
-    ['URL credentials','Medium',/\b[a-z][a-z0-9+.-]*:\/\/[^/\s:@]+:[^/\s@]+@[^/\s"'<>]+/i],
+    ['URL credentials','Medium',/\b[a-z][a-z0-9+.-]*:\/\/[^/?#\s:@\\"'<>`]*:[^/?#\s@\\"'<>`]+@(?:\[[\da-f:.]+\]|[^/?#\s:@\\"'<>`\[\]]+)/i],
   ];
   const sensitive = String.raw`(?:api[_-]?key|token|password|passwd|secret|private[_-]?key|credential|access[_-]?key)`;
   const envAssignment = new RegExp('^\\s*(?:export\\s+)?[\\w-]*'+sensitive+'[\\w-]*\\s*=\\s*(.*)$','i');
   const codeAssignment = new RegExp('(?:^|[^\\w-])["\']?[\\w-]*'+sensitive+'[\\w-]*["\']?\\s*[:=]\\s*(["\'])([^\\r\\n]+?)\\1','i');
   const placeholder = /^(?:$|<[^>]+>|\$\{.*\}|\$[\w]+|\{\{.*\}\}|(?:change[_-]?me|replace[_-]?me|dummy|example|sample|placeholder|redacted|none|null|undefined|todo|xxx+)(?:[-_ ].*)?|your(?:[-_ ].*)?)$/i;
+  const urlValue = /^[a-z][a-z0-9+.-]*:\/\/[^\s"'<>]+$/i;
   const excluded = /(?:^|\/)(?:\.git|node_modules|\.venv|vendor|dist|coverage)(?:\/|$)|\.(?:png|jpe?g|webp|gif|ico|mp4|mp3|pdf|woff2?|zip|gz|exe|dll|lock)$/i;
 
   function skip(path,size) {
@@ -53,7 +54,7 @@ const SecretSweep = (() => {
       if (value === undefined) continue;
       value = value.trim().replace(/^"([^"]*)"(?:\s*#.*)?$|^'([^']*)'(?:\s*#.*)?$|(\s+#.*$)/, (_,double,single) => double ?? single ?? '').trim();
       const rule = env ? 'Sensitive .env value' : 'Hardcoded credential';
-      if (!ignored.has(rule) && !rules.some(([, , pattern]) => pattern.test(value)) && value && (env || value.length >= 8) && !placeholder.test(value)) {
+      if (!ignored.has(rule) && !rules.some(([, , pattern]) => pattern.test(value)) && value && (env || value.length >= 8) && !placeholder.test(value) && !urlValue.test(value)) {
         add(rule,'Medium');
       }
     }
