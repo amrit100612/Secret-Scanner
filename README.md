@@ -1,36 +1,42 @@
 # Secret Sweep
 
-Secret Sweep finds API keys, passwords, and tokens that may have been left in your code. Your files stay in your browser when you use the website.
+**Catch secrets before you commit them.**
 
-## Try it on your computer
+Imagine you add an API key to a file while testing your app. A few days later, you forget it is there and get ready to push your code to GitHub. Secret Sweep can point you to the file and line before that key gets shared.
 
-1. Download or clone this project. Open a terminal in the project folder. You need Node.js 22 or newer.
+It looks for common API keys, access tokens, private keys, and passwords in places like `.env` files. A finding tells you **where to look** and **what the scanner found**, while keeping the secret itself out of the report.
+
+## Try it in your browser
+
+1. Download or clone this project and open a terminal in the project folder. You need **Node.js 22 or newer**.
 2. Run `npm run build:offline`.
 3. Open `dist/secret-sweep.html` in your browser.
-4. Click **Try sample scan**. You should see three findings from demo files.
-5. Click **Choose folder** to scan your own code.
+4. Click **Try sample scan**. You should see three findings from demo files: a GitHub token, a private key, and a sensitive `.env` value.
+5. Click **Choose folder** to scan your own project.
 
-Each finding shows the file, line number, and what the scanner found. The secret itself stays hidden, even in the JSON report. **0 findings** means the scanner found no matches in the files it checked. It skips binary files, some folders like `node_modules`, and files over 2 MB.
+Your files stay in your browser. Use the **Severity** filter to focus on High findings or click **Export JSON** to save the report.
 
-## Check your Git commits
+**What if I get 0 findings?** The scanner found no matches in the files it checked. It skips binary files, some folders such as `node_modules`, and files larger than 2 MB.
 
-Install Git, then open a terminal in the repo you want to check. Replace the example path below with the path to `cli/git-sweep.cjs` on your computer.
+## Use it with Git
+
+Install Git and open a terminal in the project you want to scan. Replace the example path below with the location of `cli/git-sweep.cjs` on your computer.
+
+| Command | What it does |
+| --- | --- |
+| `staged` | Checks the new or changed lines you marked for your next commit with `git add`. |
+| `install-hook` | Runs that check before each commit. High findings stop the commit, and Medium findings are reported. If a pre-commit hook already exists, the installer leaves it in place. |
+| `history` | Checks the commits available on your computer. It can find a secret in an older version of a file, even if you later deleted the file. |
 
 ```powershell
 node "C:/Tools/secret-sweep/cli/git-sweep.cjs" staged
 node "C:/Tools/secret-sweep/cli/git-sweep.cjs" install-hook
-node "C:/Tools/secret-sweep/cli/git-sweep.cjs" history
+node "C:/Tools/secret-sweep/cli/git-sweep.cjs" history --json
 ```
-
-- **staged** checks the lines you have marked for your next commit with `git add`.
-- **install-hook** makes Git run that check before every commit. A high-severity finding stops the commit. The installer leaves any existing hook in place.
-- **history** checks old commits available on your computer, including files you deleted later. Add `--json` to get a JSON report.
-
-The Git commands return `0` when there are no high-severity findings, `1` when they find one or more, and `2` if the scan could not finish.
 
 ## Ignore a known test value
 
-If the scanner flags a fake token in a test file, add a file called `.secretsweep.json` to the top folder of your repo.
+Sometimes a fake token in a test file looks like a real one. To ignore a specific rule for that file, create `.secretsweep.json` in the top folder of the project you want to scan.
 
 ```json
 {
@@ -40,12 +46,9 @@ If the scanner flags a fake token in a test file, add a file called `.secretswee
 }
 ```
 
-Copy the rule name from the scan results. Use the exact file path from the top of the repo, with `/` between folders. This example ignores every GitHub token match in that one file. The website reads the config when you choose the repo folder, and the history scan uses the current config. Run `git add .secretsweep.json` to use it in the pre-commit check.
+Use the exact file path and copy the rule name from the scan results. This example ignores GitHub token matches in `tests/fixtures/demo.js`. The website reads the file when you choose the project folder. To use it in the pre-commit check, stage it with `git add .secretsweep.json`.
 
-## Put the website on Vercel
 
-1. In Vercel, import this GitHub repo and keep the root directory as the repo's top folder.
-2. Click **Deploy**. The included `vercel.json` tells Vercel to serve the website from `public/`. You can leave environment variables empty.
-3. Open the deployed website and click **Try sample scan** to check that it works.
 
-Run `npm test` in the project folder to run the automated tests.
+To run the automated tests, open a terminal in the project folder and run `npm test`.
+
